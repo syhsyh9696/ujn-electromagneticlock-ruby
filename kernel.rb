@@ -1,13 +1,12 @@
 # encoding: utf-8
 
-require 'pi_piper'
-
 module Kernel
-    Version = "1.0"
+    Version = "1.2"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
     Sqlserver = "10.0.0.5"
+    Client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
 
     # GPIO initialization
     Gpionum = "18"
@@ -38,35 +37,24 @@ module Kernel
     end
 
     def keychaindb(key) #need require mysql2
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
-        keychain_array = client.query("SELECT * FROM mytable")
-        #p keychain_array.count
-        keychain_array.each do |row|
-            #p row["stuname"]
-            #p row["stunumber"]
-            #p row["stuclass"]
-            #p row["stucard"]
-            if row["stucard"] == key
-                p row["stuname"]
-                open()
-                inoutlog(row["stuname"], row["stunumber"], row["stuclass"], row["stucard"])
-                return true
-            end
-            if row["dne"]
-                puts row["dne"]
+        keychain_array = Client.query("SELECT * FROM mytable WHERE stucard='#{key}'")
+        if keychain_array == 0
+            return false
+        else
+            keychain_array.each do |row|
+                if row["stucard"] == key
+                    p row["stuname"]
+                    open()
+                    inoutlog(row["stucard"])
+                    return true
+                end
             end
         end
-        client.close
-        #Method: Mysql2::Client#close
-        #Immediately disconnect from the server
-        #normally the garbage collector will disconnect automatically when a connection is no longer needed.
-        #Explicitly closing this will free up server resources sooner than waiting for the garbage collector.
         return false
     end
 
     def duplicate(checkitem) #Eliminate duplicate card number
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
-        check_array = client.query("SELECT stucard FROM mytable")
+        check_array = Client.query("SELECT stucard FROM mytable")
         check_array.each do |check|
             if check["stucard"] == checkitem
                 return false
@@ -84,13 +72,12 @@ module Kernel
         stuclass = gets.chomp!
         p ">> Please put the card on card reader $"
         stucard = gets.chomp!
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+
         if duplicate(stucard)
-            client.query("INSERT INTO mytable VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}')")
+            Client.query("INSERT INTO mytable VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}')")
         else
             p "Card error, same card in local database"
         end
-        client.close
     end
 
     def keyupdate
@@ -101,9 +88,7 @@ module Kernel
     def keydelete
         p ">> Please put the card you want to delete on card reader"
         stucard = gets.chomp!
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
-        client.query("DELETE FROM mytable where stucard = #{stucard}")
-        client.close
+        Client.query("DELETE FROM mytable where stucard = #{stucard}")
     end
 
     def open
@@ -113,9 +98,8 @@ module Kernel
         Gpio.off
     end
 
-    def inoutlog(stuname, stunumber, stuclass, stucard)
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
-        client.query("INSERT INTO log VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}','#{Time.now.to_s}')")
+    def inoutlog(stucard)
+        Client.query("INSERT INTO inoutlog VALUES('#{stucard}','#{Time.now.to_s}')")
         return true
     end
 

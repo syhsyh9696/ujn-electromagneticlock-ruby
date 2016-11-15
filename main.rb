@@ -13,11 +13,4 @@ while true
     if keychaindb(key)
         p "Welcome, #{Time.now}"
     end
-    #keychain = Kernel::keychain
-    #unless Kernel::getInfo(keychain)
-        #p "Card error"
-    #end
-#end
-    #Kernel::keyinsert
-    #p Time.now
 end
