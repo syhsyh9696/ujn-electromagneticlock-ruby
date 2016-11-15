@@ -16,8 +16,7 @@ sudo apt-get install toilet
 ruby --version
 sudo apte-get install ruby
 # or use rvm
-rvm list
-rvm install 1.9.2
+rvm install 1.9.2 || rvm install 2.2.0
 
 # pi_piper需要的相关依赖
 sudo apt-get install ruby ruby-1.9.1-dev libssl-dev
