@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 module Kernel
-    Version = "1.2"
+    Version = "1.3"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
@@ -104,10 +104,7 @@ module Kernel
     end
 
     def judged
-        if File.directory?'/sys/class/gpio/gpio18'
-            system("echo 18 > /sys/class/gpio/unexport")
-            return false
-        else
+        if system("echo 18 > /sys/class/gpio/unexport")
             return true
         end
     end
