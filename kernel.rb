@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 module Kernel
-    Version = "1.3"
+    Version = "1.5"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
@@ -36,8 +36,9 @@ module Kernel
         return false
     end
 
-    def keychaindb(key) #need require mysql2
-        keychain_array = Client.query("SELECT * FROM mytable WHERE stucard='#{key}'")
+    def keychaindb(key) # Need gem 'mysql2'
+        key = Digest::MD5.hexdigest "#{key}"
+        keychain_array = Client.query("SELECT * FROM user WHERE stucard='#{key}'")
         if keychain_array == 0
             return false
         else
@@ -45,7 +46,7 @@ module Kernel
                 if row["stucard"] == key
                     p row["stuname"]
                     open()
-                    inoutlog(row["stucard"])
+                    inoutlog(row["stunumber"])
                     return true
                 end
             end
@@ -98,8 +99,8 @@ module Kernel
         Gpio.off
     end
 
-    def inoutlog(stucard)
-        Client.query("INSERT INTO inoutlog VALUES('#{stucard}','#{Time.now.to_s}')")
+    def inoutlog(stunumber)
+        Client.query("INSERT INTO inoutlog VALUES('#{stunumber}','#{Time.now.to_s}')")
         return true
     end
 
@@ -107,6 +108,10 @@ module Kernel
         if system("echo 18 > /sys/class/gpio/unexport")
             return true
         end
+    end
+
+    def addkey?(key)
+        #Todo
     end
 
     module_function :keychain

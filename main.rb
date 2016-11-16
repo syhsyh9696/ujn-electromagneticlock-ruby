@@ -1,10 +1,12 @@
 # encoding: utf-8
 
+Kernel::judged # Free 18 gpio port
+
 require 'mysql2'
 require 'pi_piper'
+require 'digest'
 require_relative 'kernel'
 
-Kernel::judged # Free 18 gpio port
 system("toilet --filter metal 'CENTER408'") # Script logo
 
 while true
