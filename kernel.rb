@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 module Kernel
-    Version = "1.5"
+    Version = "1.6"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
@@ -37,6 +37,7 @@ module Kernel
     end
 
     def keychaindb(key) # Need gem 'mysql2'
+        addkey?
         key = Digest::MD5.hexdigest "#{key}"
         keychain_array = Client.query("SELECT * FROM user WHERE stucard='#{key}'")
         if keychain_array == 0
@@ -111,7 +112,13 @@ module Kernel
     end
 
     def addkey?(key)
-        #Todo
+        if key == "0963713742"
+            p "Add key >>"
+            temp = gets.chomp!
+            temp = Digest::MD5.hexdigest "#{temp}"
+            Client.query("INSERT INTO user VALUES('','','','#{temp}')")
+            return true
+        end
     end
 
     module_function :keychain
@@ -123,4 +130,5 @@ module Kernel
     module_function :open
     module_function :inoutlog
     module_function :judged
+    module_function :addkey
 end

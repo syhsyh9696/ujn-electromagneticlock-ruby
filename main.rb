@@ -12,6 +12,7 @@ system("toilet --filter metal 'CENTER408'") # Script logo
 while true
     puts "Please put your card on card reader"
     key = gets.chomp!
+    addkey?(key)
     if keychaindb(key)
         p "Welcome, #{Time.now}"
     end
