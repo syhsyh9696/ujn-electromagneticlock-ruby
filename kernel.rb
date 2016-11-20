@@ -1,66 +1,40 @@
 # encoding: utf-8
 
 module Kernel
-    Version = "1.6"
+    Version = "2.0"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
     Sqlserver = "10.0.0.5"
-    Client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+    #client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
 
     # GPIO initialization
     Gpionum = "18"
     Gpio = PiPiper::Pin.new(:pin => 18, :direction => :out)
 
-    def keychain
-        keychain_array = Array.new
-        File.open("keychain.txt", "r") do |io|
-            while line = io.gets
-                line.chomp!
-                keychain_array << line
-            end
-        end
-        return keychain_array
-    end
-
-    def getInfo(keychain)
-        puts ">> Please put your card on card reader"
-        key = gets.chomp!
-        keychain.each do |io|
-            io = io.split()
-            if key == io[0]
-                p "Welcome, #{io[1]} #{Time.now}"
+    def keychaindb(key) # Need gem 'mysql2'
+        addkey?(key)
+        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        key = Digest::MD5.hexdigest "#{key}"
+        keychain_array = client.query("SELECT * FROM user WHERE stucard='#{key}'")
+        client.close
+        return false if keychain_array == 0
+        keychain_array.each do |row|
+            if row["stucard"] == key
+                open()
+                inoutlog(row["stunumber"])
                 return true
             end
         end
         return false
     end
 
-    def keychaindb(key) # Need gem 'mysql2'
-        addkey?
-        key = Digest::MD5.hexdigest "#{key}"
-        keychain_array = Client.query("SELECT * FROM user WHERE stucard='#{key}'")
-        if keychain_array == 0
-            return false
-        else
-            keychain_array.each do |row|
-                if row["stucard"] == key
-                    p row["stuname"]
-                    open()
-                    inoutlog(row["stunumber"])
-                    return true
-                end
-            end
-        end
-        return false
-    end
-
     def duplicate(checkitem) #Eliminate duplicate card number
-        check_array = Client.query("SELECT stucard FROM mytable")
+        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        check_array = client.query("SELECT stucard FROM mytable")
+        client.close
         check_array.each do |check|
-            if check["stucard"] == checkitem
-                return false
-            end
+            return false if check["stucard"] == checkitem
         end
         return true
     end
@@ -76,39 +50,33 @@ module Kernel
         stucard = gets.chomp!
 
         if duplicate(stucard)
-            Client.query("INSERT INTO mytable VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}')")
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            client.query("INSERT INTO mytable VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}')")
+            client.close
         else
             p "Card error, same card in local database"
         end
     end
 
-    def keyupdate
-        #Todo
-        return false
-    end
-
     def keydelete
         p ">> Please put the card you want to delete on card reader"
         stucard = gets.chomp!
-        Client.query("DELETE FROM mytable where stucard = #{stucard}")
+        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        client.query("DELETE FROM mytable where stucard = #{stucard}")
+        client.close
     end
 
     def open
         Gpio.on
-        p "Door open!"
         sleep 3
         Gpio.off
     end
 
     def inoutlog(stunumber)
-        Client.query("INSERT INTO inoutlog VALUES('#{stunumber}','#{Time.now.to_s}')")
+        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        client.query("INSERT INTO log (stunumber) VALUES ('#{stunumber}')")
+        client.close
         return true
-    end
-
-    def judged
-        if system("echo 18 > /sys/class/gpio/unexport")
-            return true
-        end
     end
 
     def addkey?(key)
@@ -116,19 +84,17 @@ module Kernel
             p "Add key >>"
             temp = gets.chomp!
             temp = Digest::MD5.hexdigest "#{temp}"
-            Client.query("INSERT INTO user VALUES('','','','#{temp}')")
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            client.query("INSERT INTO user VALUES('','','','#{temp}')")
+            client.close
             return true
         end
     end
 
-    module_function :keychain
-    module_function :getInfo
     module_function :keychaindb
     module_function :keyinsert
-    module_function :keyupdate
     module_function :keydelete
     module_function :open
     module_function :inoutlog
-    module_function :judged
-    module_function :addkey
+    module_function :addkey?
 end
