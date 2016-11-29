@@ -12,6 +12,5 @@ system("toilet --filter metal 'CENTER408'") # Script logo
 
 while true
     key = gets.chomp!
-    addkey?(key)
     keychaindb(key)
 end
