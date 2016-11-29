@@ -10,7 +10,9 @@ require_relative 'kernel'
 
 system("toilet --filter metal 'CENTER408'") # Script logo
 
+`stty -echo`
 while true
     key = gets.chomp!
     keychaindb(key)
 end
+`stty -echo`
