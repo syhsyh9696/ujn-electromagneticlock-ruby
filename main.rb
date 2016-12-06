@@ -6,13 +6,21 @@ system("clear")
 require 'mysql2'
 require 'pi_piper'
 require 'digest'
+require 'socket'
 require_relative 'kernel'
 
 system("toilet --filter metal 'CENTER408'") # Script logo
 
-`stty -echo`
-while true
-    key = gets.chomp!
-    keychaindb(key)
+t1 = Thread.new do
+    while true
+        key = gets.chomp!
+        keychaindb(key)
+    end
 end
-`stty -echo`
+
+t2 = Thread.new do
+    tcpserver
+end
+
+t1.join
+t2.join

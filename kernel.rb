@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 module Kernel
-    Version = "2.0"
+    Version = "2.5"
     Author = "Yuanhao Sun"
 
     # MYSQL server ip-address
@@ -14,7 +14,11 @@ module Kernel
 
     def keychaindb(key) # Need gem 'mysql2'
         addkey?(key)
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        begin
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        rescue
+            return false
+        end
         key = Digest::MD5.hexdigest "#{key}"
         keychain_array = client.query("SELECT * FROM user WHERE stucard='#{key}'")
         client.close
@@ -30,7 +34,11 @@ module Kernel
     end
 
     def duplicate(checkitem) #Eliminate duplicate card number
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        begin
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        rescue
+            return false
+        end
         check_array = client.query("SELECT stucard FROM mytable")
         client.close
         check_array.each do |check|
@@ -50,7 +58,11 @@ module Kernel
         stucard = gets.chomp!
 
         if duplicate(stucard)
-            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            begin
+                client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            rescue
+                return false
+            end
             client.query("INSERT INTO mytable VALUES('#{stuname}','#{stunumber}','#{stuclass}','#{stucard}')")
             client.close
         else
@@ -61,7 +73,11 @@ module Kernel
     def keydelete
         p ">> Please put the card you want to delete on card reader"
         stucard = gets.chomp!
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        begin
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        rescue
+            return false
+        end
         client.query("DELETE FROM mytable where stucard = #{stucard}")
         client.close
     end
@@ -73,7 +89,11 @@ module Kernel
     end
 
     def inoutlog(stunumber)
-        client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        begin
+            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+        rescue
+            return false
+        end
         client.query("INSERT INTO log (stunumber) VALUES ('#{stunumber}')")
         client.close
         return true
@@ -84,11 +104,26 @@ module Kernel
             p "Add key >>"
             temp = gets.chomp!
             temp = Digest::MD5.hexdigest "#{temp}"
-            client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            begin
+                client = Mysql2::Client.new(:host => "#{Sqlserver}", :username => "lab", :password => "default", :database => "labkeychain")
+            rescue
+                return false
+            end
             client.query("INSERT INTO user VALUES('','','','#{temp}')")
             client.close
             return true
         end
+    end
+
+    def tcpserver
+        server = TCPServer.open(21000)
+        loop {
+            Thread.start(server.accept) do |client|
+                client.puts(Time.now.ctime)
+                open()
+                client.close
+            end
+        }
     end
 
     module_function :keychaindb
@@ -97,4 +132,5 @@ module Kernel
     module_function :open
     module_function :inoutlog
     module_function :addkey?
+    module_function :tcpserver
 end
